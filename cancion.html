@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancion | Private Song Library</title>
+    <link rel="icon" type="image/png" href="LOGO.png">
+    <link rel="apple-touch-icon" href="LOGO.png">
+    <style>
+        
+        :root {
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --accent: #38bdf8;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.1);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="light"] {
+            --bg: #f1f5f9;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --text: #1e293b;
+            --accent: #0284c7;
+            --glass: rgba(0, 0, 0, 0.05);
+            --border: rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Rainbow Button Animation */
+        .rainbow-btn {
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-size: 400%;
+            color: white !important;
+            border: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            animation: rainbow 10s linear infinite;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        header {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
+        
+        .admin-tick { 
+            width: 18px; height: 18px; 
+            content: url('admin-tick.ico'); 
+            vertical-align: middle;
+            margin-left: 5px;
+            user-select: none;
+        }
+
+        /* --- FIXED INPUT GROUP FOR EYE ICON --- */
+        .auth-container { max-width: 450px; margin: 3rem auto; padding: 2.5rem; }
+        .input-group { margin-bottom: 1rem; position: relative; width: 100%; }
+        
+        input {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--glass); color: var(--text); outline: none; margin-top: 5px;
+        }
+
+        .eye-icon {
+            position: absolute; 
+            right: 12px; 
+            top: 36px; /* Adjusted to align with input vertical center after label */
+            cursor: pointer; 
+            opacity: 0.6; 
+            z-index: 10;
+            user-select: none;
+            font-size: 1.1rem;
+        }
+
+        .main-content { flex: 1; padding: 2rem; max-width: 900px; margin: 0 auto; width: 100%; }
+        
+        .song-card {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem; margin-bottom: 0.8rem; transition: transform 0.2s;
+        }
+
+        .admin-user-link {
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; align-items: center;
+            justify-content: center; z-index: 1000;
+        }
+
+        .hidden { display: none !important; }
+        footer { text-align: center; padding: 2rem; opacity: 0.6; font-size: 0.8rem; margin-top: auto; }
+        
+        button.action-btn {
+            background: none; border: 1px solid var(--border); color: var(--text);
+            padding: 5px 10px; border-radius: 6px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <header id="mainHeader" class="glass hidden">
+        <div class="user-info">
+            <img id="headerAvatar" class="avatar" src="" alt="">
+            <div>
+                <strong id="headerName"></strong> 
+                <span id="adminBadge" class="admin-tick hidden"></span>
+                <div id="headerHandle" style="font-size: 0.8rem; opacity: 0.7;"></div>
+            </div>
+        </div>
+        <div style="display:flex; gap: 10px; align-items: center;">
+            <button onclick="toggleTheme()" class="action-btn">🌓</button>
+            <button onclick="logout()" class="action-btn" style="border-color: var(--danger); color: var(--danger);">Logout</button>
+        </div>
+    </header>
+
+    <div id="authSection" class="auth-container glass">
+        <h2 id="authTitle" style="text-align: center; margin-bottom: 20px;">Cancion 🎵</h2>
+        
+        <div id="loginForm">
+            <div class="input-group">
+                <label>Username or Handle</label>
+                <input type="text" id="loginUser" placeholder="@handle">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="loginPass" placeholder="••••••••">
+                <span class="eye-icon" onclick="togglePass('loginPass')">👁️</span>
+            </div>
+            <button class="rainbow-btn" onclick="login()">Login</button>
+            <p style="text-align:center; margin-top:15px;">Invitation Only. <a href="#" onclick="showSignup()" style="color:var(--accent)">Signup</a></p>
+        </div>
+
+        <div id="signupForm" class="hidden">
+            <div class="input-group"><label>Referral</label><input type="password" id="refPass" placeholder="Referral Pass"></div>
+            <div class="input-group"><label>Display Name</label><input type="text" id="regDisplay" placeholder="Your Name"></div>
+            <div class="input-group"><label>Handle</label><input type="text" id="regHandle" placeholder="e.g. Suryansh"></div>
+            <div class="input-group"><label>Username</label><input type="text" id="regUser" placeholder="Login User"></div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="regPass" placeholder="8+ chars, 1 number">
+                <span class="eye-icon" onclick="togglePass('regPass')">👁️</span>
+            </div>
+            <div class="input-group">
+                <label style="font-size: 0.8rem;">Profile Photo:</label>
+                <input type="file" id="regPhotoFile" accept="image/*">
+            </div>
+            <button class="rainbow-btn" onclick="signup()">Create Account</button>
+            <p style="text-align:center; margin-top:15px;"><a href="#" onclick="showLogin()" style="color:var(--accent)">Back to Login</a></p>
+        </div>
+    </div>
+
+    <main id="appSection" class="main-content hidden">
+        <div class="glass" style="padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 10px;">Add New Song ➕</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="songName" placeholder="Song Title" style="flex:1">
+                <input type="text" id="songUrl" placeholder="https://..." style="flex:1">
+                <button onclick="addSong()" class="rainbow-btn" style="width: 80px; margin:0;">Add</button>
+            </div>
+        </div>
+
+        <h3>Your Songs 📚</h3>
+        <div id="songList" style="margin-top: 1rem;"></div>
+
+        <div id="adminPanel" class="admin-panel hidden">
+            <h3 style="color:var(--accent); margin-top: 2.5rem;">Admin Dashboard 🛠️</h3>
+            <div class="glass" style="margin-top: 1rem; overflow: hidden;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead style="background: var(--glass);">
+                        <tr><th style="padding:12px; text-align:left;">User</th><th style="padding:12px; text-align:right;">Actions</th></tr>
+                    </thead>
+                    <tbody id="userTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="dangerZone" style="margin-top: 4rem; text-align: center;">
+            <button onclick="deleteOwnAccount()" style="color: var(--danger); background: none; border: none; cursor: pointer; font-size: 0.8rem; text-decoration: underline;">Permanently Delete My Account</button>
+        </div>
+    </main>
+
+    <div id="inspectorModal" class="modal hidden">
+        <div class="glass" style="width: 90%; max-width: 500px; padding: 2rem; max-height: 80vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="inspectName"></h2>
+                <button onclick="closeInspector()" style="background:none; border:none; color:white; font-size:2rem; cursor:pointer;">&times;</button>
+            </div>
+            <p id="inspectHandle" style="color:var(--accent); margin-bottom:1.5rem;"></p>
+            <div id="inspectList"></div>
+        </div>
+    </div>
+
+    <footer>Made with Love By Suryansh Yadav</footer>
+
+    <script>
+        const ADMIN_USER = "Suryansh_Yadav";
+        const ADMIN_PASS = "SBW_Admin";
+        const ADMIN_HANDLE = "@Suryansh";
+        const REF_CODE = "NEWACC";
+
+        let users = JSON.parse(localStorage.getItem('cancion_v3_users')) || [];
+        let songs = JSON.parse(localStorage.getItem('cancion_v3_songs')) || [];
+        let currentUser = JSON.parse(sessionStorage.getItem('cancion_session')) || null;
+
+        function init() { if (currentUser) showApp(); }
+
+        async function signup() {
+            const ref = document.getElementById('refPass').value;
+            const display = document.getElementById('regDisplay').value.trim();
+            const rawHandle = document.getElementById('regHandle').value.replace('@', '').trim();
+            const handle = "@" + rawHandle;
+            const user = document.getElementById('regUser').value.trim();
+            const pass = document.getElementById('regPass').value;
+            const fileInput = document.getElementById('regPhotoFile');
+
+            if (ref !== REF_CODE) return alert("❌ Referral Pass Incorrect");
+            if (!display || !rawHandle || !user || !pass) return alert("❌ Fill all fields");
+            if (handle === ADMIN_HANDLE || users.some(u => u.handle === handle)) return alert("❌ Handle taken");
+            if (user === ADMIN_USER || users.some(u => u.username === user)) return alert("❌ Username taken");
+            if (pass.length < 8 || !/\d/.test(pass)) return alert("❌ Pass must be 8+ chars and have a number");
+
+            let photoData = `https://ui-avatars.com/api/?name=${display}&background=random`;
+            if (fileInput.files && fileInput.files[0]) {
+                photoData = await readFileAsDataURL(fileInput.files[0]);
+            }
+
+            const newUser = { username: user, password: pass, displayName: display, handle: handle, photo: photoData };
+            users.push(newUser);
+            localStorage.setItem('cancion_v3_users', JSON.stringify(users));
+            currentUser = newUser;
+            sessionStorage.setItem('cancion_session', JSON.stringify(newUser));
+            showApp();
+        }
+
+        function login() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value;
+
+            if ((u === ADMIN_USER || u === ADMIN_HANDLE) && p === ADMIN_PASS) {
+                currentUser = { username: ADMIN_USER, handle: ADMIN_HANDLE, displayName: "Suryansh Yadav", isAdmin: true, photo: "https://ui-avatars.com/api/?name=Suryansh+Yadav&background=0ea5e9&color=fff" };
+            } else {
+                const found = users.find(user => (user.username === u || user.handle === u) && user.password === p);
+                if (!found) return alert("❌ Invalid Credentials");
+                currentUser = found;
+            }
+            sessionStorage.setItem('cancion_session', JSON.stringify(currentUser));
+            showApp();
+        }
+
+        function showApp() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainHeader').classList.remove('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            document.getElementById('headerName').innerText = currentUser.displayName;
+            document.getElementById('headerHandle').innerText = currentUser.handle;
+            document.getElementById('headerAvatar').src = currentUser.photo;
+            
+            if (currentUser.isAdmin) {
+                document.getElementById('adminBadge').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('dangerZone').classList.add('hidden');
+                renderAdminPanel();
+            } else {
+                document.getElementById('adminBadge').classList.add('hidden');
+                document.getElementById('adminPanel').classList.add('hidden');
+                document.getElementById('dangerZone').classList.remove('hidden');
+            }
+            renderSongs();
+        }
+
+        function addSong() {
+            const name = document.getElementById('songName').value.trim();
+            const url = document.getElementById('songUrl').value.trim();
+            if (!name || !url.startsWith('http')) return alert("❌ Need valid Title and URL");
+            songs.push({ id: Date.now(), owner: currentUser.username, name, url });
+            localStorage.setItem('cancion_v3_songs', JSON.stringify(songs));
+            document.getElementById('songName').value = '';
+            document.getElementById('songUrl').value = '';
+            renderSongs();
+        }
+
+        function renderSongs() {
+            const container = document.getElementById('songList');
+            const mySongs = songs.filter(s => s.owner === currentUser.username);
+            container.innerHTML = mySongs.length ? '' : '<p style="opacity:0.5">No songs found.</p>';
+            mySongs.forEach(s => {
+                container.innerHTML += `
+                    <div class="song-card glass">
+                        <a href="${s.url}" target="_blank" style="color:var(--accent); text-decoration:none;">🎵 ${s.name}</a>
+                        <button onclick="deleteSong(${s.id})" style="background:none; border:none; color:var(--danger); cursor:pointer">🗑️</button>
+                    </div>`;
+            });
+        }
+
+        function renderAdminPanel() {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                tbody.innerHTML += `
+                    <tr style="border-bottom: 1px solid var(--border)">
+                        <td style="padding:15px">
+                            <span class="admin-user-link" onclick="inspectUser('${u.username}')">${u.displayName}</span><br>
+                            <small style="opacity:0.5">${u.handle}</small>
+                        </td>
+                        <td style="text-align:right; padding:15px">
+                            <button onclick="deleteUser('${u.username}')" style="background:var(--danger); border:none; color:white; padding:5px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer">BAN</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function inspectUser(username) {
+            const user = users.find(u => u.username === username);
+            const userSongs = songs.filter(s => s.owner === username);
+            document.getElementById('inspectName').innerText = user.displayName;
+            document.getElementById('inspectHandle').innerText = user.handle;
+            const list = document.getElementById('inspectList');
+            list.innerHTML = userSongs.length ? '' : '<p style="opacity:0.5">No songs.</p>';
+            userSongs.forEach(s => {
+                list.innerHTML += `<div style="padding:10px 0; border-bottom:1px solid var(--border)">• <a href="${s.url}" target="_blank" style="color:var(--accent); text-decoration:none;">${s.name}</a></div>`;
+            });
+            document.getElementById('inspectorModal').classList.remove('hidden');
+        }
+
+        function deleteUser(username) {
+            if (confirm("Delete this user?")) {
+                users = users.filter(u => u.username !== username);
+                songs = songs.filter(s => s.owner !== username);
+                localStorage.setItem('cancion_v3_users', JSON.stringify(users));
+                localStorage.setItem('cancion_v3_songs', JSON.stringify(songs));
+                renderAdminPanel();
+            }
+        }
+
+        function deleteOwnAccount() {
+            if (confirm("Delete your account forever?")) {
+                users = users.filter(u => u.username !== currentUser.username);
+                songs = songs.filter(s => s.owner !== currentUser.username);
+                localStorage.setItem('cancion_v3_users', JSON.stringify(users));
+                localStorage.setItem('cancion_v3_songs', JSON.stringify(songs));
+                logout();
+            }
+        }
+
+        function readFileAsDataURL(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target.result); reader.readAsDataURL(file); }); }
+        function togglePass(id) { const el = document.getElementById(id); el.type = el.type === 'password' ? 'text' : 'password'; }
+        function toggleTheme() { const b = document.body; b.setAttribute('data-theme', b.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); }
+        function logout() { sessionStorage.removeItem('cancion_session'); location.reload(); }
+        function showSignup() { document.getElementById('loginForm').classList.add('hidden'); document.getElementById('signupForm').classList.remove('hidden'); }
+        function showLogin() { document.getElementById('signupForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); }
+        function closeInspector() { document.getElementById('inspectorModal').classList.add('hidden'); }
+        function deleteSong(id) { songs = songs.filter(s => s.id !== id); localStorage.setItem('cancion_v3_songs', JSON.stringify(songs)); renderSongs(); }
+
+        init();
+    </script>
+</body>
+</html>
